@@ -126,8 +126,9 @@ class LocalStore extends ChangeNotifier {
   }
 
   bool get canDownload => !locked && (profile.admin || profile.download);
-  /// 未设置密码锁时，敏感站源默认隐藏（避免一打开就暴露）。
-  bool get sourcesUnlocked => _gateOff || _sourcesUnlocked;
+
+  /// 密码锁已移除：全部站源默认可见。
+  bool get sourcesUnlocked => true;
 
   /// 是否已启用站源密码锁。
   bool get sourceGateEnabled => _gateEnabled;
@@ -143,10 +144,9 @@ class LocalStore extends ChangeNotifier {
       SourceSite.isAvailable(source) &&
       profile.allows(source) &&
       (sourcesUnlocked || SourceSite.isPrimary(source));
-  List<SourceSite> get sources =>
-      SourceSite.visibleValues(unlocked: sourcesUnlocked)
-          .where((site) => allowsSource(site.id))
-          .toList();
+  List<SourceSite> get sources => SourceSite.visibleValues(
+    unlocked: sourcesUnlocked,
+  ).where((site) => allowsSource(site.id)).toList();
 
   void _loadLibrary() {
     _lanDocumentCache = null;

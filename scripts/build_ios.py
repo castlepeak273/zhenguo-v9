@@ -103,8 +103,16 @@ def main():
         for symbol in ['_DuanjuRequest', '_DuanjuFree']:
             if symbol not in symbols:
                 raise SystemExit('iOS 包缺少 FFI 入口：' + symbol)
-        destination = output / f'{variant.slug}-{version}-ios-unsigned-app.zip'
-        run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(application), str(destination)])
+        # Sideloadly / AltStore 需要标准 .ipa（Payload/Runner.app），
+        # 不是裸 .app.zip。这里按 IPA 目录结构打包。
+        staging = root / 'build' / 'ios' / 'ipa-staging'
+        if staging.exists():
+            shutil.rmtree(staging)
+        payload = staging / 'Payload'
+        payload.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(application, payload / 'Runner.app')
+        destination = output / f'{variant.slug}-{version}-ios.ipa'
+        run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(payload), str(destination)], cwd=staging)
         artifacts.append(destination)
     if not artifacts:
         raise SystemExit('未生成 iOS 安装包。')

@@ -50,13 +50,11 @@ class SourceSite {
     SourceSite('wuguo', '伍果', '五五短剧 · 网页目录'),
   ];
 
-  /// 默认可见站源：只有红果。其余站源都需要密码解锁。
-  static const primaryValues = [hongguo];
+  /// 默认可见站源：红果 + 十二个短剧站源，无需密码。
+  static const primaryValues = [hongguo, ...duanjuValues];
 
   /// 敏感站源：默认隐藏，在「站源管理」右上角设置密码后才显示。
-  /// 含十二个短剧站源（芽果…伍果）与黄果系。
   static const restrictedValues = [
-    ...duanjuValues,
     SourceSite('huangdou', '黄豆', '精选短剧'),
     SourceSite('huangju', '剧果', '热门 · 最新 · 分类短剧'),
     SourceSite('yeguo', '野果', '分类短剧 · 在线搜索'),

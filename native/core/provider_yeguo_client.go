@@ -29,7 +29,9 @@ import (
 )
 
 const (
-	yeguoBaseURL    = "https://analyze.buxefaex.cc"
+	// analyze.buxefaex.cc 已失效；当前可用线路走 *.payjgynz.cc，
+	// 由 ygdj7.com 发现页动态下发子域，这里保留一个已知可用入口作为兜底。
+	yeguoBaseURL    = "https://about.payjgynz.cc"
 	yeguoTransitURL = "https://ygdj7.com"
 )
 
@@ -113,7 +115,8 @@ func isYeguoActiveSite(raw string) bool {
 	host := strings.ToLower(address.Hostname())
 	return host == "analyze.buxefaex.cc" ||
 		strings.HasSuffix(host, ".buxefaex.cc") ||
-		strings.HasSuffix(host, ".fzchosdi.cc")
+		strings.HasSuffix(host, ".fzchosdi.cc") ||
+		strings.HasSuffix(host, ".payjgynz.cc")
 }
 
 func yeguoTransitDecodedText(body string) string {
@@ -181,7 +184,7 @@ func yeguoTransitSites(body string) []string {
 	for _, match := range yeguoTransitLiteral.FindAllString(text, 32) {
 		if parsed, err := url.Parse(match); err == nil {
 			host := strings.ToLower(parsed.Hostname())
-			if strings.HasSuffix(host, ".buxefaex.cc") || strings.HasSuffix(host, ".fzchosdi.cc") {
+			if strings.HasSuffix(host, ".buxefaex.cc") || strings.HasSuffix(host, ".fzchosdi.cc") || strings.HasSuffix(host, ".payjgynz.cc") {
 				add(match)
 			}
 		}
@@ -415,21 +418,26 @@ func (client *yeguoAPIClient) discoverConfiguration(ctx context.Context) (*yeguo
 			sites = append(sites, site)
 		}
 	}
+	// 配置入口排在最前面先试。
+	//
+	// 探针实测（真实家宽）：analyze.buxefaex.cc 走 TCP 只要 2.1-3.6 秒就能成功；
+	// 而 ygdj7.com 发现出来的 4 条 fzchosdi.cc 线路已全部被 DNS 污染
+	// （解析到 Dropbox / Facebook 的 IP），整批不可用 —— 先试它们只会把
+	// 25 秒预算耗光，最后报「野果线路暂不可用 context deadline exceeded」。
 	add(client.site)
 	add(yeguoBaseURL)
+	// 再由线路发现页补充「当前」线路作为兜底候选（add 内部按 host 去重）。
+	for _, site := range client.discoverTransitSites(ctx) {
+		add(site)
+	}
+
 	var lastErr error
-	for index := 0; index < len(sites); index++ {
-		site := sites[index]
+	for _, site := range sites {
 		access, err := client.discoverConfigurationAt(ctx, site)
 		if err == nil {
 			return access, nil
 		}
 		lastErr = err
-		if index == 0 {
-			for _, site := range client.discoverTransitSites(ctx) {
-				add(site)
-			}
-		}
 	}
 	return nil, errors.Join(errors.New("野果线路暂不可用，请稍后重试"), lastErr)
 }

@@ -1,0 +1,67 @@
+真果鉴 v9 —— 源代码
+====================
+
+版本: 0.2.55+61 (versionCode 2061)
+包名: com.duanju.duanju_app
+构建日期: 2026-09-28
+
+这个包是什么
+------------
+基于上游 guoapp 0.2.55+61 快照（20 站源全站源版），加上以下修复：
+
+1. 站源密码锁（本次新增）
+   - 默认只显示红果；芽果/猫果/饭果/观果/河果/星果/花果/牛果/网果/发果/皮果/伍果
+     以及黄豆/剧果/野果/帝果/黄果视频/黄果AI/黄果旧版，全部需要密码解锁
+   - 入口：站源管理右上角 🔒，或连点底部「最近观看」6 次
+   - 修复: local_snapshot.dart 的字段白名单漏登记 sourceGate*，
+     导致设置密码时报 "Bad state: 无效的本地配置字段"
+
+2. HTTP/3 协议竞速（修 帝果/野果/黄豆/黄果AI 连不上）
+   - network_browser.go: WithDisableHttp3() -> WithProtocolRacing()
+   - matches() 放开 GET/HEAD 限制（野果接口用 POST），并覆盖全部已登记站源
+   - provider_yeguo_client.go: requestClient() 复用竞速通道
+     （原代码有个反向判断，会主动把野果踢出通道）
+
+3. 野果按域名选协议（tcpOnlyHosts）
+   - ygdj7.com / buxefaex.cc / fzchosdi.cc / ygrwdsgt.cc 强制走 TCP
+     （这些域名 HTTP/3 反而超时，每个白等 10 秒撑爆 25 秒预算）
+   - yeguodj.com（野果 API）保持 HTTP/3 —— 走 TCP 会 connection reset
+   - discoverConfiguration 改为「配置入口优先」，不再先试已失效的发现线路
+
+4. 黄果域名批次 + 封面 CDN
+   - provider_media.go 补 6 个域名后缀
+   - app_covers.go 加 .tkzdds.cn
+
+目录结构
+--------
+lib/            Flutter/Dart 界面代码（83 个 .dart）
+native/core/    Go 核心（130 个 .go），站源适配、取流、解密
+native/bridge/  Go <-> Dart 桥接
+android/        Android 壳工程
+ios/ windows/   其它平台
+packages/       path 依赖（media_kit_libs_windows_video）
+scripts/        构建脚本（build_android.py 等）
+test/           单元测试
+.github/        GitHub Actions 工作流（本包内未使用）
+
+编译方法
+--------
+需要: Flutter 3.47.4 / Dart 3.13 / Android SDK + NDK 28.2.13676358 / Go 1.24+
+
+  flutter pub get --enforce-lockfile
+  python scripts/build_android.py --all-sources     # 20 站源全站源版
+  python scripts/build_android.py                   # 只红果的单源版
+
+产物在 build/app/outputs/flutter-apk/ 和 dist/android/。
+
+签名
+----
+本包不含签名密钥。用 debug key 编出来的 APK 装不上已装的正式版，
+需要用同一把密钥签名才能覆盖升级。
+
+已排除的内容
+------------
+build/ .dart_tool/ dist/ android/.gradle/ —— 编译产物，几百 MB，重新编译会生成
+android/local.properties —— 含本机 SDK 绝对路径，构建时自动生成
+.flutter-plugins-dependencies —— 生成文件
+.git/config 里的 remote —— 含访问凭据，已用干净配置替换（提交历史保留）

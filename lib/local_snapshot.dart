@@ -32,6 +32,10 @@ class LocalSnapshot {
     'themeMode',
     'autoExport',
     'exportPosters',
+    'sourceGateEnabled',
+    'sourceGateOff',
+    'sourceGateSalt',
+    'sourceGateHash',
     'forceLogin',
   };
   final SharedPreferences preferences;
@@ -76,6 +80,8 @@ class LocalSnapshot {
         'hideVip',
         'autoExport',
         'exportPosters',
+        'sourceGateEnabled',
+        'sourceGateOff',
         'forceLogin',
       }.contains(entry.key.split('.').last);
       if (!owns(entry.key) ||
